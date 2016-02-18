@@ -107,7 +107,7 @@ public class Cli {
             }
             int versionLength = dotPos >= 0 ? dotPos - versionPos : fileName.length() - versionPos;
             if (version == null || "".equals(version.trim())) {
-                version = fileName.substring(versionPos, versionLength);
+                version = fileName.substring(versionPos, versionPos + versionLength);
             }
             if (version == null || "".equals(version.trim())) {
                 System.out.println(String.format("'version' parameter not specified and file name without 'name-version.ext' format: %s", fileName));
