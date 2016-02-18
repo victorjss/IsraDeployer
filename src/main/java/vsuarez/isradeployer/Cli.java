@@ -98,7 +98,7 @@ public class Cli {
         }
         
         if (name == null || "".equals(name.trim())) {
-            String fileName = repoDir.getName();
+            String fileName = file.getName();
             int versionPos = fileName.lastIndexOf("-") + 1;
             int dotPos = fileName.lastIndexOf(".");
             if (versionPos <= 1 || (dotPos >= 0 && versionPos >= dotPos)) {
