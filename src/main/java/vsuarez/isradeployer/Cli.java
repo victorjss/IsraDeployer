@@ -113,10 +113,10 @@ public class Cli {
                 System.out.println(String.format("'version' parameter not specified and file name without 'name-version.ext' format: %s", fileName));
                 return;
             }
-            if ((dotPos >=0 && (fileName.length() - 1 - dotPos - versionPos > 0)) && (ext == null || "".equals(ext.trim()))) {
-                ext = fileName.substring(dotPos);
+            if ((dotPos >=0 && (fileName.length() - 1 - dotPos > 0)) && (ext == null || "".equals(ext.trim()))) {
+                ext = fileName.substring(dotPos + 1);
             } 
-            name = fileName.substring(0, versionPos);
+            name = fileName.substring(0, versionPos - 1);
         }
         
         File repoFile = new File(
