@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -126,7 +127,7 @@ public class Cli {
         String parentDir = repoFile.getParent();
         new File(parentDir).mkdirs();
 
-        Files.copy(file.toPath(), repoFile.toPath());
+        Files.copy(file.toPath(), repoFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         
         try {
             File jsonFile = new File(getRepoDirPath(repoDir, name) + name + ".json");
