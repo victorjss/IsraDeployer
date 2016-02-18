@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -121,13 +120,13 @@ public class Cli {
         }
         
         File repoFile = new File(
-                getMainFileName(repoDir, name, version) + "." 
-                        + (ext == null || "".equals(ext.trim()) ? ".img" : ext));
+                getRepoDirPath(repoDir, name) + "boxes" + File.separator + name 
+                + "-" + version + "." + (ext == null || "".equals(ext.trim()) ? ".img" : ext));
 
         Files.copy(file.toPath(), repoFile.toPath());
         
         try {
-            File jsonFile = new File(getMainFileName(repoDir, name, version) + ".json");
+            File jsonFile = new File(getRepoDirPath(repoDir, name) + name + ".json");
             
             JsonDescriptor jsonDescriptor = null;
             
@@ -164,6 +163,10 @@ public class Cli {
         
     }
 
+    protected static String getRepoDirPath(File repoDir, String name) {
+        return repoDir.getAbsolutePath() + File.separator + name + File.separator;
+    }
+
     protected static JsonDescriptor buildJsonDescriptor(String desc, String name, String version, String provider, String url, File file) throws NoSuchAlgorithmException, IOException {
         JsonDescriptor jsonDescriptor = new JsonDescriptor();
         jsonDescriptor.setDescription(desc);
@@ -198,11 +201,6 @@ public class Cli {
         return jsonVersion;
     }
 
-    protected static String getMainFileName(File repoDir, String name, String version) {
-        return repoDir.getAbsolutePath() + File.separator + "boxes" + File.separator + name 
-                + "-" + version;
-    }
-    
     static final class JsonDescriptor {
         String name;
         String description;
