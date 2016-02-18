@@ -199,7 +199,7 @@ public class Cli {
     }
 
     protected static String getMainFileName(File repoDir, String name, String version) {
-        return repoDir.getAbsolutePath() + File.separator + name 
+        return repoDir.getAbsolutePath() + File.separator + "boxes" + File.separator + name 
                 + "-" + version;
     }
     
