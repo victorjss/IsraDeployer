@@ -118,10 +118,11 @@ public class Cli {
             } 
             name = fileName.substring(0, versionPos - 1);
         }
+        String newFilename = buildNewFilename(name, version, ext);
         
         File repoFile = new File(
-                getRepoDirPath(repoDir, name) + "boxes" + File.separator + name 
-                + "-" + version + "." + (ext == null || "".equals(ext.trim()) ? ".img" : ext));
+                getRepoDirPath(repoDir, name) + ARTIFACT_SUBDIR + File.separator 
+                        + newFilename);
         String parentDir = repoFile.getParent();
         new File(parentDir).mkdirs();
 
@@ -134,7 +135,7 @@ public class Cli {
             
             ObjectMapper mapper = new ObjectMapper();
             if (!jsonFile.exists()) {
-                jsonDescriptor = buildJsonDescriptor(desc, name, version, provider, url, file);
+                jsonDescriptor = buildJsonDescriptor(desc, name, version, newFilename, provider, url, file);
 
             } else {
                 jsonDescriptor = mapper.readValue(jsonFile, JsonDescriptor.class);
@@ -145,7 +146,7 @@ public class Cli {
                         break;
                     }
                 }
-                JsonVersion jsonVersion = buildJsonVersion(version, provider, url, file);
+                JsonVersion jsonVersion = buildJsonVersion(version, provider, url, file, newFilename);
                 if (versionIndex < 0) {
                     jsonDescriptor.getVersions().add(jsonVersion);
                 } else {
@@ -165,27 +166,33 @@ public class Cli {
         
     }
 
+    protected static final String ARTIFACT_SUBDIR = "boxes";
+    
+    protected static String buildNewFilename(String name, String version, String ext) {
+        return name + "-" + version + "." + (ext == null || "".equals(ext.trim()) ? ".img" : ext);
+    }
+
     protected static String getRepoDirPath(File repoDir, String name) {
         return repoDir.getAbsolutePath() + File.separator + name + File.separator;
     }
 
-    protected static JsonDescriptor buildJsonDescriptor(String desc, String name, String version, String provider, String url, File file) throws NoSuchAlgorithmException, IOException {
+    protected static JsonDescriptor buildJsonDescriptor(String desc, String name, String version, String newFilename, String provider, String url, File file) throws NoSuchAlgorithmException, IOException {
         JsonDescriptor jsonDescriptor = new JsonDescriptor();
         jsonDescriptor.setDescription(desc);
         jsonDescriptor.setName(name);
-        JsonVersion jsonVersion = buildJsonVersion(version, provider, url, file);
+        JsonVersion jsonVersion = buildJsonVersion(version, provider, url, file, newFilename);
         jsonDescriptor.getVersions().add(jsonVersion);
         return jsonDescriptor;
     }
 
-    protected static JsonVersion buildJsonVersion(String version, String provider, String url, File file) throws IOException, NoSuchAlgorithmException {
+    protected static JsonVersion buildJsonVersion(String version, String provider, String url, File file, String newFilename) throws IOException, NoSuchAlgorithmException {
         final JsonVersion jsonVersion = new JsonVersion();
         jsonVersion.setVersion(version);
         final JsonProvider jsonProvider = new JsonProvider();
         jsonVersion.getProviders().add(jsonProvider);
         jsonProvider.setChecksum_type("sha256");
         jsonProvider.setName(provider);
-        jsonProvider.setUrl(url);
+        jsonProvider.setUrl(url + "/" + ARTIFACT_SUBDIR + "/" + newFilename);
         MessageDigest md = MessageDigest.getInstance("SHA-256");
         try (FileInputStream fis = new FileInputStream(file)) {
             byte[] buffer = new byte[512];
@@ -197,7 +204,7 @@ public class Cli {
         }
         byte[] digest = md.digest();
         StringBuilder sb = new StringBuilder();
-        IntStream.range(0, digest.length).forEach(b -> sb.append(Integer.toHexString(0xff & b)));
+        IntStream.range(0, digest.length).map(i -> digest[i]).forEach(b -> sb.append(Integer.toHexString(0xff & b)));
         String hash = sb.toString();
         jsonProvider.setChecksum(hash.toLowerCase());
         return jsonVersion;
