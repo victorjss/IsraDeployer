@@ -1,11 +1,16 @@
 package vsuarez.isradeployer;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -107,6 +112,7 @@ public class Cli {
             }
             if (version == null || "".equals(version.trim())) {
                 System.out.println(String.format("'version' parameter not specified and file name without 'name-version.ext' format: %s", fileName));
+                return;
             }
             if ((dotPos >=0 && (fileName.length() - 1 - dotPos - versionPos > 0)) && (ext == null || "".equals(ext.trim()))) {
                 ext = fileName.substring(dotPos);
@@ -120,31 +126,76 @@ public class Cli {
 
         Files.copy(file.toPath(), repoFile.toPath());
         
-        File jsonFile = new File(getMainFileName(repoDir, name, version) + ".json");
-        
-        if (!jsonFile.exists()) {
-            String jsonString = "{\"name\":\"%s\",\n"
-                    + "\"description\":\"%s\",\n"
-                    + "\"versions\":[{\n"
-                    + "\"version\":\"%s\",\"providers\":[{\"name\":\"%s\",\"url\":\"%s\",\"checksum_type\":\"sha256\",\"checksum\":\"%s\"\n"
-                    + "}]}]}";
-                    
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            try (FileInputStream fis = new FileInputStream(file)) { 
-                byte[] buffer = new byte[512];
-                int r = 0;
-                while ((r = fis.read(buffer)) > 0) {
-                    md.update(buffer, 0, r);
+        try {
+            File jsonFile = new File(getMainFileName(repoDir, name, version) + ".json");
+            
+            JsonDescriptor jsonDescriptor = null;
+            
+            ObjectMapper mapper = new ObjectMapper();
+            if (!jsonFile.exists()) {
+                jsonDescriptor = buildJsonDescriptor(desc, name, version, provider, url, file);
+
+            } else {
+                jsonDescriptor = mapper.readValue(jsonFile, JsonDescriptor.class);
+                int versionIndex = -1;
+                for (int i = 0; i < jsonDescriptor.getVersions().size(); i++) {
+                    if (version.equals(jsonDescriptor.getVersions().get(i).getVersion())) {
+                        versionIndex = i;
+                        break;
+                    }
                 }
-                
+                JsonVersion jsonVersion = buildJsonVersion(version, provider, url, file);
+                if (versionIndex < 0) {
+                    jsonDescriptor.getVersions().add(jsonVersion);
+                } else {
+                    jsonDescriptor.getVersions().set(versionIndex, jsonVersion);
+                }
             }
-            byte[] digest = md.digest();
-            StringBuilder sb = new StringBuilder();
-            IntStream.range(0, digest.length).forEach(b -> sb.append(Integer.toHexString(0xff & b)));
-            String hash = sb.toString();
+            FileWriter fw = new FileWriter(jsonFile);
+            mapper.writeValue(fw, jsonDescriptor);
+
+        } catch (Exception e) {
+            //undo changes
+            if (repoFile.exists()) {
+                repoFile.delete();
+            }
         }
         
         
+    }
+
+    protected static JsonDescriptor buildJsonDescriptor(String desc, String name, String version, String provider, String url, File file) throws NoSuchAlgorithmException, IOException {
+        JsonDescriptor jsonDescriptor = new JsonDescriptor();
+        jsonDescriptor.setDescription(desc);
+        jsonDescriptor.setName(name);
+        JsonVersion jsonVersion = buildJsonVersion(version, provider, url, file);
+        jsonDescriptor.getVersions().add(jsonVersion);
+        return jsonDescriptor;
+    }
+
+    protected static JsonVersion buildJsonVersion(String version, String provider, String url, File file) throws IOException, NoSuchAlgorithmException {
+        final JsonVersion jsonVersion = new JsonVersion();
+        jsonVersion.setVersion(version);
+        final JsonProvider jsonProvider = new JsonProvider();
+        jsonVersion.getProviders().add(jsonProvider);
+        jsonProvider.setChecksum_type("sha256");
+        jsonProvider.setName(provider);
+        jsonProvider.setUrl(url);
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        try (FileInputStream fis = new FileInputStream(file)) {
+            byte[] buffer = new byte[512];
+            int r = 0;
+            while ((r = fis.read(buffer)) > 0) {
+                md.update(buffer, 0, r);
+            }
+            
+        }
+        byte[] digest = md.digest();
+        StringBuilder sb = new StringBuilder();
+        IntStream.range(0, digest.length).forEach(b -> sb.append(Integer.toHexString(0xff & b)));
+        String hash = sb.toString();
+        jsonProvider.setChecksum(hash.toLowerCase());
+        return jsonVersion;
     }
 
     protected static String getMainFileName(File repoDir, String name, String version) {
@@ -155,7 +206,7 @@ public class Cli {
     static final class JsonDescriptor {
         String name;
         String description;
-        List<JsonVersion> versions;
+        List<JsonVersion> versions = new ArrayList<>();
 
         public String getName() {
             return name;
@@ -186,7 +237,7 @@ public class Cli {
     
     static final class JsonVersion {
         String version;
-        List<JsonProvider> providers;
+        List<JsonProvider> providers = new ArrayList<>();
 
         public String getVersion() {
             return version;
