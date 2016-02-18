@@ -158,6 +158,7 @@ public class Cli {
             mapper.writeValue(fw, jsonDescriptor);
 
         } catch (Exception e) {
+            e.printStackTrace();
             //undo changes
             if (repoFile.exists()) {
                 repoFile.delete();
