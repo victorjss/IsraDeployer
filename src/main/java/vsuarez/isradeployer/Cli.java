@@ -122,6 +122,8 @@ public class Cli {
         File repoFile = new File(
                 getRepoDirPath(repoDir, name) + "boxes" + File.separator + name 
                 + "-" + version + "." + (ext == null || "".equals(ext.trim()) ? ".img" : ext));
+        String parentDir = repoFile.getParent();
+        new File(parentDir).mkdirs();
 
         Files.copy(file.toPath(), repoFile.toPath());
         
