@@ -40,7 +40,15 @@ public class Cli {
             if (!set.contains(name)) {
                 throw new IllegalArgumentException(String.format("Wrong parameter %s", name));
             }
-            map.put(name, nameValue[1]);
+            if ("desc".equals(name) || "description".equals(name)) {
+                String desc = nameValue[1];
+                if (desc.startsWith("'") || desc.startsWith("\"")) {
+                    desc = desc.substring(1, desc.length() - 1);
+                }
+                map.put(name, desc);
+            } else {
+                map.put(name, nameValue[1]);
+            }
         }
         
         return map;        
