@@ -51,11 +51,8 @@ public class Cli {
         try {
             map = parsePars(arg);
         } catch (IllegalArgumentException e) {
-            System.out.println("Wrong parameters!\n\n"
-                    + "Valid parameters are: name=artifact_name description/desc=artifact_description\n"
-                    + "version=1.0 ext/extension=.img\n"
-                    + "url=http://my.repository.com/\nfile/path=/path/to/artifact\n"
-                    + "repo=/path/to/repo/dir");
+            System.out.println("Wrong parameters!");
+            printHelp();
             return;
         }
         String name = map.get("name");
@@ -69,32 +66,38 @@ public class Cli {
         
         if (path == null || "".equals(path.trim())) {
             System.out.println("'path' parameter is mandatory.");
+            printHelp();
             return;
         }        
         File file = new File(path);
         if (!file.exists()) {
             System.out.println(String.format("File %s not found!", path));
+            printHelp();
             return;
         }
         
         if (repo == null || "".equals(repo.trim())) {
             System.out.println("'repo' parameter is mandatory.");
+            printHelp();
             return;
         }
         File repoDir = new File(repo);
         if (!repoDir.exists() || !repoDir.isDirectory()) {
             System.out.println(String.format("Repo %s not found!", path));
+            printHelp();
             return;
         }
         
         if (url == null || "".equals(url.trim())) {
             System.out.println("'url' parameter is mandatory.");
+            printHelp();
             return;
         }
         try {
             new URL(url);
         } catch (MalformedURLException e) {
             System.out.println(String.format("Malformed 'url' parameter %s", url));
+            printHelp();
             return;
         }
         
@@ -104,6 +107,7 @@ public class Cli {
             int dotPos = fileName.lastIndexOf(".");
             if (versionPos <= 1 || (dotPos >= 0 && versionPos >= dotPos)) {
                 System.out.println(String.format("'name' parameter not specified and file name without 'name-version.ext' format: %s", fileName));
+                printHelp();
                 return;
             }
             int versionLength = dotPos >= 0 ? dotPos - versionPos : fileName.length() - versionPos;
@@ -112,6 +116,7 @@ public class Cli {
             }
             if (version == null || "".equals(version.trim())) {
                 System.out.println(String.format("'version' parameter not specified and file name without 'name-version.ext' format: %s", fileName));
+                printHelp();
                 return;
             }
             if ((dotPos >=0 && (fileName.length() - 1 - dotPos > 0)) && (ext == null || "".equals(ext.trim()))) {
@@ -166,6 +171,14 @@ public class Cli {
         }
         
         
+    }
+
+    protected static void printHelp() {
+        System.out.println("\n\nExample of valid parameters are:\n\nname=artifact_name description/desc=artifact_description \\\n"
+                + "version=1.0 ext/extension=.img \\\n"
+                + "url=http://my.repository.com/ \\\n"
+                + "file/path=/path/to/artifact \\\n"
+                + "repo=/path/to/repo/dir");
     }
 
     protected static final String ARTIFACT_SUBDIR = "boxes";
